@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Teachable Machine - Exemplo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 20px;
+            transition: 0.5s;
+        }
+        #webcam-container {
+            width: 300px;
+            height: 300px;
+            margin: auto;
+            background-color: #40f865;
+        }
+        button {
+            padding: 10px 20px;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>IA com Teachable Machine</h1>
+ 
+    <div id="webcam-container"></div>
+    <div id="label-container"></div>
+ 
+    <button id="toggleBtn">Ligar Câmera</button>
+ 
+    <!-- Importa as bibliotecas do Teachable Machine -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+    <script>
+        // URL do seu modelo exportado no Teachable Machine
+        const URL = "https://teachablemachine.withgoogle.com/models/oikuS--t6/";
+
+        let model, webcam, maxPredictions, isOn = false, img = "https://tse1.mm.bing.net/th/id/OIP.7LfsYJNOk5o_rH-aEqUCWQHaF_?rs=1&pid=ImgDetMain&o=7&rm=3";
+
+        document.getElementById("toggleBtn").addEventListener("click", function () {
+            if (!isOn) {
+                ligarCamera();
+                this.textContent = "Desligar Câmera";
+            } else {
+                desligarCamera();
+                this.textContent = "Ligar Câmera";
+            }
+            isOn = !isOn;
+        });
+ 
+        async function ligarCamera() {
+            document.getElementById("label-container").innerHTML = "Loading...";
+
+            const modelURL = URL + "model.json";
+            const metadataURL = URL + "metadata.json";
+ 
+            model = await tmImage.load(modelURL, metadataURL);
+            webcam = new tmImage.Webcam(300, 300, true);
+            await webcam.setup();
+            await webcam.play();
+            document.getElementById("webcam-container").innerHTML = "";
+            document.getElementById("webcam-container").appendChild(webcam.canvas);
+            window.requestAnimationFrame(loop);
+            
+            maxPredictions = model.getTotalClasses();
+            
+            document.getElementById("webcam-container").appendChild(webcam.canvas);
+            document.getElementById("label-container").innerHTML = "";
+            labelContainer = document.getElementById("label-container");
+            for (let i = 0; i < maxPredictions; i++) { // and class labels
+                labelContainer.appendChild(document.createElement("div"));
+            }
+        }
+ 
+        function desligarCamera() {
+            if (webcam) {
+                webcam.stop();
+                document.getElementById("webcam-container").innerHTML = "<img src='img/macaco.jpg' width='300' height='300'>";
+            }
+        }
+ 
+        async function loop() {
+            webcam.update();
+            await predict();
+            if (isOn) {
+                window.requestAnimationFrame(loop);
+            }
+        }
+ 
+        async function predict() {
+            const prediction = await model.predict(webcam.canvas);
+            console.log(prediction);
+        }
+
+        async function predict() {
+            // predict can take in an image, video or canvas html element
+            const prediction = await model.predict(webcam.canvas);
+            for (let i = 0; i < maxPredictions; i++) {
+                const classPrediction =
+                    prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+                labelContainer.childNodes[i].innerHTML = classPrediction;
+
+                const n1 = prediction[0].probability.toFixed(2);
+                const n2 = prediction[1].probability.toFixed(2);
+                const n3 = prediction[2].probability.toFixed(2);
+                if (!isOn) {
+                    document.body.style.backgroundColor = "white";
+                } else if (n1 > n2 && n1 > n3) {
+                    document.body.style.backgroundColor = "green";
+                } else if (n2 > n1 && n2 > n3) {
+                    document.body.style.backgroundColor = "red";
+                } else {
+                    document.body.style.backgroundColor = "white";
+                }
+            }
+        }
+    </script>
+</body>
+</html>
